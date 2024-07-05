@@ -1,6 +1,6 @@
-# Pure
-# by Sindre Sorhus
-# https://github.com/sindresorhus/pure
+# Purus
+# by Antti Kivi
+# https://github.com/anttikivi/purus
 # MIT License
 
 # For my own and others sanity
@@ -27,7 +27,7 @@
 # Turns seconds into human readable time.
 # 165392 => 1d 21h 56m 32s
 # https://github.com/sindresorhus/pretty-time-zsh
-prompt_pure_human_time_to_var() {
+prompt_purus_human_time_to_var() {
 	local human total_seconds=$1 var=$2
 	local days=$(( total_seconds / 60 / 60 / 24 ))
 	local hours=$(( total_seconds / 60 / 60 % 24 ))
@@ -42,18 +42,18 @@ prompt_pure_human_time_to_var() {
 	typeset -g "${var}"="${human}"
 }
 
-# Stores (into prompt_pure_cmd_exec_time) the execution
+# Stores (into prompt_purus_cmd_exec_time) the execution
 # time of the last command if set threshold was exceeded.
-prompt_pure_check_cmd_exec_time() {
+prompt_purus_check_cmd_exec_time() {
 	integer elapsed
-	(( elapsed = EPOCHSECONDS - ${prompt_pure_cmd_timestamp:-$EPOCHSECONDS} ))
-	typeset -g prompt_pure_cmd_exec_time=
-	(( elapsed > ${PURE_CMD_MAX_EXEC_TIME:-5} )) && {
-		prompt_pure_human_time_to_var $elapsed "prompt_pure_cmd_exec_time"
+	(( elapsed = EPOCHSECONDS - ${prompt_purus_cmd_timestamp:-$EPOCHSECONDS} ))
+	typeset -g prompt_purus_cmd_exec_time=
+	(( elapsed > ${PURUS_CMD_MAX_EXEC_TIME:-5} )) && {
+		prompt_purus_human_time_to_var $elapsed "prompt_purus_cmd_exec_time"
 	}
 }
 
-prompt_pure_set_title() {
+prompt_purus_set_title() {
 	setopt localoptions noshwordsplit
 
 	# Emacs terminal does not support settings the title.
@@ -66,7 +66,7 @@ prompt_pure_set_title() {
 
 	# Show hostname if connected via SSH.
 	local hostname=
-	if [[ -n $prompt_pure_state[username] ]]; then
+	if [[ -n $prompt_purus_state[username] ]]; then
 		# Expand in-place in case ignore-escape is used.
 		hostname="${(%):-(%m) }"
 	fi
@@ -81,87 +81,87 @@ prompt_pure_set_title() {
 	print -n $opts $'\e]0;'${hostname}${2}$'\a'
 }
 
-prompt_pure_preexec() {
-	if [[ -n $prompt_pure_git_fetch_pattern ]]; then
+prompt_purus_preexec() {
+	if [[ -n $prompt_purus_git_fetch_pattern ]]; then
 		# Detect when Git is performing pull/fetch, including Git aliases.
 		local -H MATCH MBEGIN MEND match mbegin mend
-		if [[ $2 =~ (git|hub)\ (.*\ )?($prompt_pure_git_fetch_pattern)(\ .*)?$ ]]; then
+		if [[ $2 =~ (git|hub)\ (.*\ )?($prompt_purus_git_fetch_pattern)(\ .*)?$ ]]; then
 			# We must flush the async jobs to cancel our git fetch in order
 			# to avoid conflicts with the user issued pull / fetch.
-			async_flush_jobs 'prompt_pure'
+			async_flush_jobs 'prompt_purus'
 		fi
 	fi
 
-	typeset -g prompt_pure_cmd_timestamp=$EPOCHSECONDS
+	typeset -g prompt_purus_cmd_timestamp=$EPOCHSECONDS
 
 	# Shows the current directory and executed command in the title while a process is active.
-	prompt_pure_set_title 'ignore-escape' "$PWD:t: $2"
+	prompt_purus_set_title 'ignore-escape' "$PWD:t: $2"
 
 	# Disallow Python virtualenv from updating the prompt. Set it to 12 if
-	# untouched by the user to indicate that Pure modified it. Here we use
+	# untouched by the user to indicate that Purus modified it. Here we use
 	# the magic number 12, same as in `psvar`.
 	export VIRTUAL_ENV_DISABLE_PROMPT=${VIRTUAL_ENV_DISABLE_PROMPT:-12}
 }
 
 # Change the colors if their value are different from the current ones.
-prompt_pure_set_colors() {
+prompt_purus_set_colors() {
 	local color_temp key value
-	for key value in ${(kv)prompt_pure_colors}; do
-		zstyle -t ":prompt:pure:$key" color "$value"
+	for key value in ${(kv)prompt_purus_colors}; do
+		zstyle -t ":prompt:purus:$key" color "$value"
 		case $? in
 			1) # The current style is different from the one from zstyle.
-				zstyle -s ":prompt:pure:$key" color color_temp
-				prompt_pure_colors[$key]=$color_temp ;;
+				zstyle -s ":prompt:purus:$key" color color_temp
+				prompt_purus_colors[$key]=$color_temp ;;
 			2) # No style is defined.
-				prompt_pure_colors[$key]=$prompt_pure_colors_default[$key] ;;
+				prompt_purus_colors[$key]=$prompt_purus_colors_default[$key] ;;
 		esac
 	done
 }
 
-prompt_pure_preprompt_render() {
+prompt_purus_preprompt_render() {
 	setopt localoptions noshwordsplit
 
-	unset prompt_pure_async_render_requested
+	unset prompt_purus_async_render_requested
 
 	# Set color for Git branch/dirty status and change color if dirty checking has been delayed.
-	local git_color=$prompt_pure_colors[git:branch]
-	local git_dirty_color=$prompt_pure_colors[git:dirty]
-	[[ -n ${prompt_pure_git_last_dirty_check_timestamp+x} ]] && git_color=$prompt_pure_colors[git:branch:cached]
+	local git_color=$prompt_purus_colors[git:branch]
+	local git_dirty_color=$prompt_purus_colors[git:dirty]
+	[[ -n ${prompt_purus_git_last_dirty_check_timestamp+x} ]] && git_color=$prompt_purus_colors[git:branch:cached]
 
 	# Initialize the preprompt array.
 	local -a preprompt_parts
 
 	# Suspended jobs in background.
 	if ((${(M)#jobstates:#suspended:*} != 0)); then
-		preprompt_parts+='%F{$prompt_pure_colors[suspended_jobs]}✦'
+		preprompt_parts+='%F{$prompt_purus_colors[suspended_jobs]}✦'
 	fi
 
 	# Username and machine, if applicable.
-	[[ -n $prompt_pure_state[username] ]] && preprompt_parts+=($prompt_pure_state[username])
+	[[ -n $prompt_purus_state[username] ]] && preprompt_parts+=($prompt_purus_state[username])
 
 	# Set the path.
-	preprompt_parts+=('%F{${prompt_pure_colors[path]}}%~%f')
+	preprompt_parts+=('%F{${prompt_purus_colors[path]}}%~%f')
 
 	# Git branch and dirty status info.
-	typeset -gA prompt_pure_vcs_info
-	if [[ -n $prompt_pure_vcs_info[branch] ]]; then
-		preprompt_parts+=("%F{$git_color}"'${prompt_pure_vcs_info[branch]}'"%F{$git_dirty_color}"'${prompt_pure_git_dirty}%f')
+	typeset -gA prompt_purus_vcs_info
+	if [[ -n $prompt_purus_vcs_info[branch] ]]; then
+		preprompt_parts+=("%F{$git_color}"'${prompt_purus_vcs_info[branch]}'"%F{$git_dirty_color}"'${prompt_purus_git_dirty}%f')
 	fi
 	# Git action (for example, merge).
-	if [[ -n $prompt_pure_vcs_info[action] ]]; then
-		preprompt_parts+=("%F{$prompt_pure_colors[git:action]}"'$prompt_pure_vcs_info[action]%f')
+	if [[ -n $prompt_purus_vcs_info[action] ]]; then
+		preprompt_parts+=("%F{$prompt_purus_colors[git:action]}"'$prompt_purus_vcs_info[action]%f')
 	fi
 	# Git pull/push arrows.
-	if [[ -n $prompt_pure_git_arrows ]]; then
-		preprompt_parts+=('%F{$prompt_pure_colors[git:arrow]}${prompt_pure_git_arrows}%f')
+	if [[ -n $prompt_purus_git_arrows ]]; then
+		preprompt_parts+=('%F{$prompt_purus_colors[git:arrow]}${prompt_purus_git_arrows}%f')
 	fi
 	# Git stash symbol (if opted in).
-	if [[ -n $prompt_pure_git_stash ]]; then
-		preprompt_parts+=('%F{$prompt_pure_colors[git:stash]}${PURE_GIT_STASH_SYMBOL:-≡}%f')
+	if [[ -n $prompt_purus_git_stash ]]; then
+		preprompt_parts+=('%F{$prompt_purus_colors[git:stash]}${PURUS_GIT_STASH_SYMBOL:-≡}%f')
 	fi
 
 	# Execution time.
-	[[ -n $prompt_pure_cmd_exec_time ]] && preprompt_parts+=('%F{$prompt_pure_colors[execution_time]}${prompt_pure_cmd_exec_time}%f')
+	[[ -n $prompt_purus_cmd_exec_time ]] && preprompt_parts+=('%F{$prompt_purus_colors[execution_time]}${prompt_purus_cmd_exec_time}%f')
 
 	local cleaned_ps1=$PROMPT
 	local -H MATCH MBEGIN MEND
@@ -189,29 +189,29 @@ prompt_pure_preprompt_render() {
 	if [[ $1 == precmd ]]; then
 		# Initial newline, for spaciousness.
 		print
-	elif [[ $prompt_pure_last_prompt != $expanded_prompt ]]; then
+	elif [[ $prompt_purus_last_prompt != $expanded_prompt ]]; then
 		# Redraw the prompt.
-		prompt_pure_reset_prompt
+		prompt_purus_reset_prompt
 	fi
 
-	typeset -g prompt_pure_last_prompt=$expanded_prompt
+	typeset -g prompt_purus_last_prompt=$expanded_prompt
 }
 
-prompt_pure_precmd() {
+prompt_purus_precmd() {
 	setopt localoptions noshwordsplit
 
 	# Check execution time and store it in a variable.
-	prompt_pure_check_cmd_exec_time
-	unset prompt_pure_cmd_timestamp
+	prompt_purus_check_cmd_exec_time
+	unset prompt_purus_cmd_timestamp
 
 	# Shows the full path in the title.
-	prompt_pure_set_title 'expand-prompt' '%~'
+	prompt_purus_set_title 'expand-prompt' '%~'
 
 	# Modify the colors if some have changed..
-	prompt_pure_set_colors
+	prompt_purus_set_colors
 
 	# Perform async Git dirty check and fetch.
-	prompt_pure_async_tasks
+	prompt_purus_async_tasks
 
 	# Check if we should display the virtual env. We use a sufficiently high
 	# index of psvar (12) here to avoid collisions with user defined entries.
@@ -221,7 +221,7 @@ prompt_pure_precmd() {
 		psvar[12]="${CONDA_DEFAULT_ENV//[$'\t\r\n']}"
 	fi
 	# When VIRTUAL_ENV_DISABLE_PROMPT is empty, it was unset by the user and
-	# Pure should take back control.
+	# Purus should take back control.
 	if [[ -n $VIRTUAL_ENV ]] && [[ -z $VIRTUAL_ENV_DISABLE_PROMPT || $VIRTUAL_ENV_DISABLE_PROMPT = 12 ]]; then
 		psvar[12]="${VIRTUAL_ENV:t}"
 		export VIRTUAL_ENV_DISABLE_PROMPT=12
@@ -230,26 +230,26 @@ prompt_pure_precmd() {
 	# Nix package manager integration. If used from within 'nix shell' - shell name is shown like so:
 	# ~/Projects/flake-utils-plus master
 	# flake-utils-plus ❯
-	if zstyle -T ":prompt:pure:environment:nix-shell" show; then
+	if zstyle -T ":prompt:purus:environment:nix-shell" show; then
 		if [[ -n $IN_NIX_SHELL ]]; then
 			psvar[12]="${name:-nix-shell}"
 		fi
 	fi
 
 	# Make sure VIM prompt is reset.
-	prompt_pure_reset_prompt_symbol
+	prompt_purus_reset_prompt_symbol
 
 	# Print the preprompt.
-	prompt_pure_preprompt_render "precmd"
+	prompt_purus_preprompt_render "precmd"
 
 	if [[ -n $ZSH_THEME ]]; then
-		print "WARNING: Oh My Zsh themes are enabled (ZSH_THEME='${ZSH_THEME}'). Pure might not be working correctly."
-		print "For more information, see: https://github.com/sindresorhus/pure#oh-my-zsh"
+		print "WARNING: Oh My Zsh themes are enabled (ZSH_THEME='${ZSH_THEME}'). Purus might not be working correctly."
+		print "For more information, see: https://github.com/anttikivi/purus#oh-my-zsh"
 		unset ZSH_THEME  # Only show this warning once.
 	fi
 }
 
-prompt_pure_async_git_aliases() {
+prompt_purus_async_git_aliases() {
 	setopt localoptions noshwordsplit
 	local -a gitalias pullalias
 
@@ -269,7 +269,7 @@ prompt_pure_async_git_aliases() {
 	print -- ${(j:|:)pullalias}  # Join on pipe, for use in regex.
 }
 
-prompt_pure_async_vcs_info() {
+prompt_purus_async_vcs_info() {
 	setopt localoptions noshwordsplit
 
 	# Configure `vcs_info` inside an async task. This frees up `vcs_info`
@@ -294,7 +294,7 @@ prompt_pure_async_vcs_info() {
 }
 
 # Fastest possible way to check if a Git repo is dirty.
-prompt_pure_async_git_dirty() {
+prompt_purus_async_git_dirty() {
 	setopt localoptions noshwordsplit
 	local untracked_dirty=$1
 	local untracked_git_mode=$(command git config --get status.showUntrackedFiles)
@@ -314,7 +314,7 @@ prompt_pure_async_git_dirty() {
 	return $?
 }
 
-prompt_pure_async_git_fetch() {
+prompt_purus_async_git_fetch() {
 	setopt localoptions noshwordsplit
 
 	local only_upstream=${1:-0}
@@ -379,21 +379,21 @@ prompt_pure_async_git_fetch() {
 	unsetopt monitor
 
 	# Check arrow status after a successful `git fetch`.
-	prompt_pure_async_git_arrows
+	prompt_purus_async_git_arrows
 }
 
-prompt_pure_async_git_arrows() {
+prompt_purus_async_git_arrows() {
 	setopt localoptions noshwordsplit
 	command git rev-list --left-right --count HEAD...@'{u}'
 }
 
-prompt_pure_async_git_stash() {
+prompt_purus_async_git_stash() {
 	git rev-list --walk-reflogs --count refs/stash
 }
 
 # Try to lower the priority of the worker so that disk heavy operations
 # like `git status` has less impact on the system responsivity.
-prompt_pure_async_renice() {
+prompt_purus_async_renice() {
 	setopt localoptions noshwordsplit
 
 	if command -v renice >/dev/null; then
@@ -405,100 +405,100 @@ prompt_pure_async_renice() {
 	fi
 }
 
-prompt_pure_async_init() {
-	typeset -g prompt_pure_async_inited
-	if ((${prompt_pure_async_inited:-0})); then
+prompt_purus_async_init() {
+	typeset -g prompt_purus_async_inited
+	if ((${prompt_purus_async_inited:-0})); then
 		return
 	fi
-	prompt_pure_async_inited=1
-	async_start_worker "prompt_pure" -u -n
-	async_register_callback "prompt_pure" prompt_pure_async_callback
-	async_worker_eval "prompt_pure" prompt_pure_async_renice
+	prompt_purus_async_inited=1
+	async_start_worker "prompt_purus" -u -n
+	async_register_callback "prompt_purus" prompt_purus_async_callback
+	async_worker_eval "prompt_purus" prompt_purus_async_renice
 }
 
-prompt_pure_async_tasks() {
+prompt_purus_async_tasks() {
 	setopt localoptions noshwordsplit
 
 	# Initialize the async worker.
-	prompt_pure_async_init
+	prompt_purus_async_init
 
 	# Update the current working directory of the async worker.
-	async_worker_eval "prompt_pure" builtin cd -q $PWD
+	async_worker_eval "prompt_purus" builtin cd -q $PWD
 
-	typeset -gA prompt_pure_vcs_info
+	typeset -gA prompt_purus_vcs_info
 
 	local -H MATCH MBEGIN MEND
-	if [[ $PWD != ${prompt_pure_vcs_info[pwd]}* ]]; then
+	if [[ $PWD != ${prompt_purus_vcs_info[pwd]}* ]]; then
 		# Stop any running async jobs.
-		async_flush_jobs "prompt_pure"
+		async_flush_jobs "prompt_purus"
 
 		# Reset Git preprompt variables, switching working tree.
-		unset prompt_pure_git_dirty
-		unset prompt_pure_git_last_dirty_check_timestamp
-		unset prompt_pure_git_arrows
-		unset prompt_pure_git_stash
-		unset prompt_pure_git_fetch_pattern
-		prompt_pure_vcs_info[branch]=
-		prompt_pure_vcs_info[top]=
+		unset prompt_purus_git_dirty
+		unset prompt_purus_git_last_dirty_check_timestamp
+		unset prompt_purus_git_arrows
+		unset prompt_purus_git_stash
+		unset prompt_purus_git_fetch_pattern
+		prompt_purus_vcs_info[branch]=
+		prompt_purus_vcs_info[top]=
 	fi
 	unset MATCH MBEGIN MEND
 
-	async_job "prompt_pure" prompt_pure_async_vcs_info
+	async_job "prompt_purus" prompt_purus_async_vcs_info
 
 	# Only perform tasks inside a Git working tree.
-	[[ -n $prompt_pure_vcs_info[top] ]] || return
+	[[ -n $prompt_purus_vcs_info[top] ]] || return
 
-	prompt_pure_async_refresh
+	prompt_purus_async_refresh
 }
 
-prompt_pure_async_refresh() {
+prompt_purus_async_refresh() {
 	setopt localoptions noshwordsplit
 
-	if [[ -z $prompt_pure_git_fetch_pattern ]]; then
+	if [[ -z $prompt_purus_git_fetch_pattern ]]; then
 		# We set the pattern here to avoid redoing the pattern check until the
 		# working tree has changed. Pull and fetch are always valid patterns.
-		typeset -g prompt_pure_git_fetch_pattern="pull|fetch"
-		async_job "prompt_pure" prompt_pure_async_git_aliases
+		typeset -g prompt_purus_git_fetch_pattern="pull|fetch"
+		async_job "prompt_purus" prompt_purus_async_git_aliases
 	fi
 
-	async_job "prompt_pure" prompt_pure_async_git_arrows
+	async_job "prompt_purus" prompt_purus_async_git_arrows
 
 	# Do not perform `git fetch` if it is disabled or in home folder.
-	if (( ${PURE_GIT_PULL:-1} )) && [[ $prompt_pure_vcs_info[top] != $HOME ]]; then
-		zstyle -t :prompt:pure:git:fetch only_upstream
+	if (( ${PURUS_GIT_PULL:-1} )) && [[ $prompt_purus_vcs_info[top] != $HOME ]]; then
+		zstyle -t :prompt:purus:git:fetch only_upstream
 		local only_upstream=$((? == 0))
-		async_job "prompt_pure" prompt_pure_async_git_fetch $only_upstream
+		async_job "prompt_purus" prompt_purus_async_git_fetch $only_upstream
 	fi
 
 	# If dirty checking is sufficiently fast,
 	# tell the worker to check it again, or wait for timeout.
-	integer time_since_last_dirty_check=$(( EPOCHSECONDS - ${prompt_pure_git_last_dirty_check_timestamp:-0} ))
-	if (( time_since_last_dirty_check > ${PURE_GIT_DELAY_DIRTY_CHECK:-1800} )); then
-		unset prompt_pure_git_last_dirty_check_timestamp
+	integer time_since_last_dirty_check=$(( EPOCHSECONDS - ${prompt_purus_git_last_dirty_check_timestamp:-0} ))
+	if (( time_since_last_dirty_check > ${PURUS_GIT_DELAY_DIRTY_CHECK:-1800} )); then
+		unset prompt_purus_git_last_dirty_check_timestamp
 		# Check check if there is anything to pull.
-		async_job "prompt_pure" prompt_pure_async_git_dirty ${PURE_GIT_UNTRACKED_DIRTY:-1}
+		async_job "prompt_purus" prompt_purus_async_git_dirty ${PURUS_GIT_UNTRACKED_DIRTY:-1}
 	fi
 
 	# If stash is enabled, tell async worker to count stashes
-	if zstyle -t ":prompt:pure:git:stash" show; then
-		async_job "prompt_pure" prompt_pure_async_git_stash
+	if zstyle -t ":prompt:purus:git:stash" show; then
+		async_job "prompt_purus" prompt_purus_async_git_stash
 	else
-		unset prompt_pure_git_stash
+		unset prompt_purus_git_stash
 	fi
 }
 
-prompt_pure_check_git_arrows() {
+prompt_purus_check_git_arrows() {
 	setopt localoptions noshwordsplit
 	local arrows left=${1:-0} right=${2:-0}
 
-	(( right > 0 )) && arrows+=${PURE_GIT_DOWN_ARROW:-⇣}
-	(( left > 0 )) && arrows+=${PURE_GIT_UP_ARROW:-⇡}
+	(( right > 0 )) && arrows+=${PURUS_GIT_DOWN_ARROW:-⇣}
+	(( left > 0 )) && arrows+=${PURUS_GIT_UP_ARROW:-⇡}
 
 	[[ -n $arrows ]] || return
 	typeset -g REPLY=$arrows
 }
 
-prompt_pure_async_callback() {
+prompt_purus_async_callback() {
 	setopt localoptions noshwordsplit
 	local job=$1 code=$2 output=$3 exec_time=$4 next_pending=$6
 	local do_render=0
@@ -512,25 +512,25 @@ prompt_pure_async_callback() {
 				# Our worker died unexpectedly, try to recover immediately.
 				# TODO(mafredri): Do we need to handle next_pending
 				#                 and defer the restart?
-				typeset -g prompt_pure_async_inited=0
-				async_stop_worker prompt_pure
-				prompt_pure_async_init   # Reinit the worker.
-				prompt_pure_async_tasks  # Restart all tasks.
+				typeset -g prompt_purus_async_inited=0
+				async_stop_worker prompt_purus
+				prompt_purus_async_init   # Reinit the worker.
+				prompt_purus_async_tasks  # Restart all tasks.
 
 				# Reset render state due to restart.
-				unset prompt_pure_async_render_requested
+				unset prompt_purus_async_render_requested
 			fi
 			;;
 		\[async/eval])
 			if (( code )); then
 				# Looks like async_worker_eval failed,
 				# rerun async tasks just in case.
-				prompt_pure_async_tasks
+				prompt_purus_async_tasks
 			fi
 			;;
-		prompt_pure_async_vcs_info)
+		prompt_purus_async_vcs_info)
 			local -A info
-			typeset -gA prompt_pure_vcs_info
+			typeset -gA prompt_purus_vcs_info
 
 			# Parse output (z) and unquote as array (Q@).
 			info=("${(Q@)${(z)output}}")
@@ -540,67 +540,67 @@ prompt_pure_async_callback() {
 				return
 			fi
 			# Check if Git top-level has changed.
-			if [[ $info[top] = $prompt_pure_vcs_info[top] ]]; then
+			if [[ $info[top] = $prompt_purus_vcs_info[top] ]]; then
 				# If the stored pwd is part of $PWD, $PWD is shorter and likelier
 				# to be top-level, so we update pwd.
-				if [[ $prompt_pure_vcs_info[pwd] = ${PWD}* ]]; then
-					prompt_pure_vcs_info[pwd]=$PWD
+				if [[ $prompt_purus_vcs_info[pwd] = ${PWD}* ]]; then
+					prompt_purus_vcs_info[pwd]=$PWD
 				fi
 			else
 				# Store $PWD to detect if we (maybe) left the Git path.
-				prompt_pure_vcs_info[pwd]=$PWD
+				prompt_purus_vcs_info[pwd]=$PWD
 			fi
 			unset MATCH MBEGIN MEND
 
 			# The update has a Git top-level set, which means we just entered a new
 			# Git directory. Run the async refresh tasks.
-			[[ -n $info[top] ]] && [[ -z $prompt_pure_vcs_info[top] ]] && prompt_pure_async_refresh
+			[[ -n $info[top] ]] && [[ -z $prompt_purus_vcs_info[top] ]] && prompt_purus_async_refresh
 
 			# Always update branch, top-level and stash.
-			prompt_pure_vcs_info[branch]=$info[branch]
-			prompt_pure_vcs_info[top]=$info[top]
-			prompt_pure_vcs_info[action]=$info[action]
+			prompt_purus_vcs_info[branch]=$info[branch]
+			prompt_purus_vcs_info[top]=$info[top]
+			prompt_purus_vcs_info[action]=$info[action]
 
 			do_render=1
 			;;
-		prompt_pure_async_git_aliases)
+		prompt_purus_async_git_aliases)
 			if [[ -n $output ]]; then
 				# Append custom Git aliases to the predefined ones.
-				prompt_pure_git_fetch_pattern+="|$output"
+				prompt_purus_git_fetch_pattern+="|$output"
 			fi
 			;;
-		prompt_pure_async_git_dirty)
-			local prev_dirty=$prompt_pure_git_dirty
+		prompt_purus_async_git_dirty)
+			local prev_dirty=$prompt_purus_git_dirty
 			if (( code == 0 )); then
-				unset prompt_pure_git_dirty
+				unset prompt_purus_git_dirty
 			else
-				typeset -g prompt_pure_git_dirty="*"
+				typeset -g prompt_purus_git_dirty="*"
 			fi
 
-			[[ $prev_dirty != $prompt_pure_git_dirty ]] && do_render=1
+			[[ $prev_dirty != $prompt_purus_git_dirty ]] && do_render=1
 
-			# When `prompt_pure_git_last_dirty_check_timestamp` is set, the Git info is displayed
+			# When `prompt_purus_git_last_dirty_check_timestamp` is set, the Git info is displayed
 			# in a different color. To distinguish between a "fresh" and a "cached" result, the
 			# preprompt is rendered before setting this variable. Thus, only upon the next
 			# rendering of the preprompt will the result appear in a different color.
-			(( $exec_time > 5 )) && prompt_pure_git_last_dirty_check_timestamp=$EPOCHSECONDS
+			(( $exec_time > 5 )) && prompt_purus_git_last_dirty_check_timestamp=$EPOCHSECONDS
 			;;
-		prompt_pure_async_git_fetch|prompt_pure_async_git_arrows)
-			# `prompt_pure_async_git_fetch` executes `prompt_pure_async_git_arrows`
+		prompt_purus_async_git_fetch|prompt_purus_async_git_arrows)
+			# `prompt_purus_async_git_fetch` executes `prompt_purus_async_git_arrows`
 			# after a successful fetch.
 			case $code in
 				0)
 					local REPLY
-					prompt_pure_check_git_arrows ${(ps:\t:)output}
-					if [[ $prompt_pure_git_arrows != $REPLY ]]; then
-						typeset -g prompt_pure_git_arrows=$REPLY
+					prompt_purus_check_git_arrows ${(ps:\t:)output}
+					if [[ $prompt_purus_git_arrows != $REPLY ]]; then
+						typeset -g prompt_purus_git_arrows=$REPLY
 						do_render=1
 					fi
 					;;
 				97)
 					# No remote available, make sure to clear git arrows if set.
-					if [[ -n $prompt_pure_git_arrows ]]; then
-						typeset -g prompt_pure_git_arrows=
+					if [[ -n $prompt_purus_git_arrows ]]; then
+						typeset -g prompt_purus_git_arrows=
 						do_render=1
 					fi
 					;;
@@ -608,32 +608,32 @@ prompt_pure_async_callback() {
 					# Git fetch failed.
 					;;
 				*)
-					# Non-zero exit status from `prompt_pure_async_git_arrows`,
+					# Non-zero exit status from `prompt_purus_async_git_arrows`,
 					# indicating that there is no upstream configured.
-					if [[ -n $prompt_pure_git_arrows ]]; then
-						unset prompt_pure_git_arrows
+					if [[ -n $prompt_purus_git_arrows ]]; then
+						unset prompt_purus_git_arrows
 						do_render=1
 					fi
 					;;
 			esac
 			;;
-		prompt_pure_async_git_stash)
-			local prev_stash=$prompt_pure_git_stash
-			typeset -g prompt_pure_git_stash=$output
-			[[ $prev_stash != $prompt_pure_git_stash ]] && do_render=1
+		prompt_purus_async_git_stash)
+			local prev_stash=$prompt_purus_git_stash
+			typeset -g prompt_purus_git_stash=$output
+			[[ $prev_stash != $prompt_purus_git_stash ]] && do_render=1
 			;;
 	esac
 
 	if (( next_pending )); then
-		(( do_render )) && typeset -g prompt_pure_async_render_requested=1
+		(( do_render )) && typeset -g prompt_purus_async_render_requested=1
 		return
 	fi
 
-	[[ ${prompt_pure_async_render_requested:-$do_render} = 1 ]] && prompt_pure_preprompt_render
-	unset prompt_pure_async_render_requested
+	[[ ${prompt_purus_async_render_requested:-$do_render} = 1 ]] && prompt_purus_preprompt_render
+	unset prompt_purus_async_render_requested
 }
 
-prompt_pure_reset_prompt() {
+prompt_purus_reset_prompt() {
 	if [[ $CONTEXT == cont ]]; then
 		# When the context is "cont", PS2 is active and calling
 		# reset-prompt will have no effect on PS1, but it will
@@ -647,30 +647,30 @@ prompt_pure_reset_prompt() {
 	zle && zle .reset-prompt
 }
 
-prompt_pure_reset_prompt_symbol() {
-	prompt_pure_state[prompt]=${PURE_PROMPT_SYMBOL:-❯}
+prompt_purus_reset_prompt_symbol() {
+	prompt_purus_state[prompt]=${PURUS_PROMPT_SYMBOL:-❯}
 }
 
-prompt_pure_update_vim_prompt_widget() {
+prompt_purus_update_vim_prompt_widget() {
 	setopt localoptions noshwordsplit
-	prompt_pure_state[prompt]=${${KEYMAP/vicmd/${PURE_PROMPT_VICMD_SYMBOL:-❮}}/(main|viins)/${PURE_PROMPT_SYMBOL:-❯}}
+	prompt_purus_state[prompt]=${${KEYMAP/vicmd/${PURUS_PROMPT_VICMD_SYMBOL:-❮}}/(main|viins)/${PURUS_PROMPT_SYMBOL:-❯}}
 
-	prompt_pure_reset_prompt
+	prompt_purus_reset_prompt
 }
 
-prompt_pure_reset_vim_prompt_widget() {
+prompt_purus_reset_vim_prompt_widget() {
 	setopt localoptions noshwordsplit
-	prompt_pure_reset_prompt_symbol
+	prompt_purus_reset_prompt_symbol
 
 	# We can't perform a prompt reset at this point because it
 	# removes the prompt marks inserted by macOS Terminal.
 }
 
-prompt_pure_state_setup() {
+prompt_purus_state_setup() {
 	setopt localoptions noshwordsplit
 
 	# Check SSH_CONNECTION and the current state.
-	local ssh_connection=${SSH_CONNECTION:-$PROMPT_PURE_SSH_CONNECTION}
+	local ssh_connection=${SSH_CONNECTION:-$PROMPT_PURUS_SSH_CONNECTION}
 	local username hostname
 	if [[ -z $ssh_connection ]] && (( $+commands[who] )); then
 		# When changing user on a remote system, the $SSH_CONNECTION
@@ -699,31 +699,31 @@ prompt_pure_state_setup() {
 			# Export variable to allow detection propagation inside
 			# shells spawned by this one (e.g. tmux does not always
 			# inherit the same tty, which breaks detection).
-			export PROMPT_PURE_SSH_CONNECTION=$ssh_connection
+			export PROMPT_PURUS_SSH_CONNECTION=$ssh_connection
 		fi
 		unset MATCH MBEGIN MEND
 	fi
 
-	hostname='%F{$prompt_pure_colors[host]}@%m%f'
+	hostname='%F{$prompt_purus_colors[host]}@%m%f'
 	# Show `username@host` if logged in through SSH.
-	[[ -n $ssh_connection ]] && username='%F{$prompt_pure_colors[user]}%n%f'"$hostname"
+	[[ -n $ssh_connection ]] && username='%F{$prompt_purus_colors[user]}%n%f'"$hostname"
 
 	# Show `username@host` if inside a container and not in GitHub Codespaces.
-	[[ -z "${CODESPACES}" ]] && prompt_pure_is_inside_container && username='%F{$prompt_pure_colors[user]}%n%f'"$hostname"
+	[[ -z "${CODESPACES}" ]] && prompt_purus_is_inside_container && username='%F{$prompt_purus_colors[user]}%n%f'"$hostname"
 
 	# Show `username@host` if root, with username in default color.
-	[[ $UID -eq 0 ]] && username='%F{$prompt_pure_colors[user:root]}%n%f'"$hostname"
+	[[ $UID -eq 0 ]] && username='%F{$prompt_purus_colors[user:root]}%n%f'"$hostname"
 
-	typeset -gA prompt_pure_state
-	prompt_pure_state[version]="1.23.0"
-	prompt_pure_state+=(
+	typeset -gA prompt_purus_state
+	prompt_purus_state[version]="0.1.0-dev"
+	prompt_purus_state+=(
 		username "$username"
-		prompt	 "${PURE_PROMPT_SYMBOL:-❯}"
+		prompt	 "${PURUS_PROMPT_SYMBOL:-❯}"
 	)
 }
 
 # Return true if executing inside a Docker, OCI, LXC, or systemd-nspawn container.
-prompt_pure_is_inside_container() {
+prompt_purus_is_inside_container() {
 	local -r cgroup_file='/proc/1/cgroup'
 	local -r nspawn_file='/run/host/container-manager'
 	[[ -r "$cgroup_file" && "$(< $cgroup_file)" = *(lxc|docker)* ]] \
@@ -733,7 +733,7 @@ prompt_pure_is_inside_container() {
 		|| [[ -r "$nspawn_file" ]]
 }
 
-prompt_pure_system_report() {
+prompt_purus_system_report() {
 	setopt localoptions noshwordsplit
 
 	local shell=$SHELL
@@ -754,13 +754,13 @@ prompt_pure_system_report() {
 	git_version=($(git --version))  # Remove newlines, if hub is present.
 	print - "- Git: $git_version"
 
-	print - "- Pure state:"
-	for k v in "${(@kv)prompt_pure_state}"; do
+	print - "- Purus state:"
+	for k v in "${(@kv)prompt_purus_state}"; do
 		print - "    - $k: \`${(q-)v}\`"
 	done
 	print - "- zsh-async version: \`${ASYNC_VERSION}\`"
 	print - "- PROMPT: \`$(typeset -p PROMPT)\`"
-	print - "- Colors: \`$(typeset -p prompt_pure_colors)\`"
+	print - "- Colors: \`$(typeset -p prompt_purus_colors)\`"
 	print - "- TERM: \`$(typeset -p TERM)\`"
 	print - "- Virtualenv: \`$(typeset -p VIRTUAL_ENV_DISABLE_PROMPT)\`"
 	print - "- Conda: \`$(typeset -p CONDA_CHANGEPS1)\`"
@@ -787,13 +787,13 @@ prompt_pure_system_report() {
 	fi
 }
 
-prompt_pure_setup() {
+prompt_purus_setup() {
 	# Prevent percentage showing up if output doesn't end with a newline.
 	export PROMPT_EOL_MARK=''
 
 	prompt_opts=(subst percent)
 
-	# Borrowed from `promptinit`. Sets the prompt options in case Pure was not
+	# Borrowed from `promptinit`. Sets the prompt options in case Purus was not
 	# initialized via `promptinit`.
 	setopt noprompt{bang,cr,percent,subst} "prompt${^prompt_opts[@]}"
 
@@ -816,8 +816,8 @@ prompt_pure_setup() {
 	autoload -Uz +X add-zle-hook-widget 2>/dev/null
 
 	# Set the colors.
-	typeset -gA prompt_pure_colors_default prompt_pure_colors
-	prompt_pure_colors_default=(
+	typeset -gA prompt_purus_colors_default prompt_purus_colors
+	prompt_purus_colors_default=(
 		execution_time       yellow
 		git:arrow            cyan
 		git:stash            cyan
@@ -835,35 +835,35 @@ prompt_pure_setup() {
 		user:root            default
 		virtualenv           242
 	)
-	prompt_pure_colors=("${(@kv)prompt_pure_colors_default}")
+	prompt_purus_colors=("${(@kv)prompt_purus_colors_default}")
 
-	add-zsh-hook precmd prompt_pure_precmd
-	add-zsh-hook preexec prompt_pure_preexec
+	add-zsh-hook precmd prompt_purus_precmd
+	add-zsh-hook preexec prompt_purus_preexec
 
-	prompt_pure_state_setup
+	prompt_purus_state_setup
 
-	zle -N prompt_pure_reset_prompt
-	zle -N prompt_pure_update_vim_prompt_widget
-	zle -N prompt_pure_reset_vim_prompt_widget
+	zle -N prompt_purus_reset_prompt
+	zle -N prompt_purus_update_vim_prompt_widget
+	zle -N prompt_purus_reset_vim_prompt_widget
 	if (( $+functions[add-zle-hook-widget] )); then
-		add-zle-hook-widget zle-line-finish prompt_pure_reset_vim_prompt_widget
-		add-zle-hook-widget zle-keymap-select prompt_pure_update_vim_prompt_widget
+		add-zle-hook-widget zle-line-finish prompt_purus_reset_vim_prompt_widget
+		add-zle-hook-widget zle-keymap-select prompt_purus_update_vim_prompt_widget
 	fi
 
 	# If a virtualenv is activated, display it in grey.
-	PROMPT='%(12V.%F{$prompt_pure_colors[virtualenv]}%12v%f .)'
+	PROMPT='%(12V.%F{$prompt_purus_colors[virtualenv]}%12v%f .)'
 
 	# Prompt turns red if the previous command didn't exit with 0.
-	local prompt_indicator='%(?.%F{$prompt_pure_colors[prompt:success]}.%F{$prompt_pure_colors[prompt:error]})${prompt_pure_state[prompt]}%f '
+	local prompt_indicator='%(?.%F{$prompt_purus_colors[prompt:success]}.%F{$prompt_purus_colors[prompt:error]})${prompt_purus_state[prompt]}%f '
 	PROMPT+=$prompt_indicator
 
 	# Indicate continuation prompt by … and use a darker color for it.
-	PROMPT2='%F{$prompt_pure_colors[prompt:continuation]}… %(1_.%_ .%_)%f'$prompt_indicator
+	PROMPT2='%F{$prompt_purus_colors[prompt:continuation]}… %(1_.%_ .%_)%f'$prompt_indicator
 
 	# Store prompt expansion symbols for in-place expansion via (%). For
 	# some reason it does not work without storing them in a variable first.
-	typeset -ga prompt_pure_debug_depth
-	prompt_pure_debug_depth=('%e' '%N' '%x')
+	typeset -ga prompt_purus_debug_depth
+	prompt_purus_debug_depth=('%e' '%N' '%x')
 
 	# Compare is used to check if %N equals %x. When they differ, the main
 	# prompt is used to allow displaying both filename and function. When
@@ -871,9 +871,9 @@ prompt_pure_setup() {
 	# information.
 	local -A ps4_parts
 	ps4_parts=(
-		depth 	  '%F{yellow}${(l:${(%)prompt_pure_debug_depth[1]}::+:)}%f'
-		compare   '${${(%)prompt_pure_debug_depth[2]}:#${(%)prompt_pure_debug_depth[3]}}'
-		main      '%F{blue}${${(%)prompt_pure_debug_depth[3]}:t}%f%F{242}:%I%f %F{242}@%f%F{blue}%N%f%F{242}:%i%f'
+		depth 	  '%F{yellow}${(l:${(%)prompt_purus_debug_depth[1]}::+:)}%f'
+		compare   '${${(%)prompt_purus_debug_depth[2]}:#${(%)prompt_purus_debug_depth[3]}}'
+		main      '%F{blue}${${(%)prompt_purus_debug_depth[3]}:t}%f%F{242}:%I%f %F{242}@%f%F{blue}%N%f%F{242}:%i%f'
 		secondary '%F{blue}%N%f%F{242}:%i'
 		prompt 	  '%F{242}>%f '
 	)
@@ -887,7 +887,7 @@ prompt_pure_setup() {
 	# add colors to highlight essential parts like file and function name.
 	PROMPT4="${ps4_parts[depth]} ${ps4_symbols}${ps4_parts[prompt]}"
 
-	# Guard against Oh My Zsh themes overriding Pure.
+	# Guard against Oh My Zsh themes overriding Purus.
 	unset ZSH_THEME
 
 	# Guard against (ana)conda changing the PS1 prompt
@@ -895,4 +895,4 @@ prompt_pure_setup() {
 	export CONDA_CHANGEPS1=no
 }
 
-prompt_pure_setup "$@"
+prompt_purus_setup "$@"
